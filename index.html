@@ -17,8 +17,8 @@
     <style>
         body {
             font-family: 'Outfit', 'Inter', sans-serif;
-            background-color: #FFFFFF;
-            color: #1A1A1A;
+            background-color: #000000;
+            color: #FFFFFF;
             overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
@@ -43,6 +43,15 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        .strobe-effect {
+            animation: strobe 0.1s linear infinite;
+        }
+        @keyframes strobe {
+            0% { background-color: white; }
+            50% { background-color: black; }
+            100% { background-color: white; }
+        }
     </style>
 <script type="importmap">
 {
@@ -60,6 +69,9 @@
 </head>
 <body>
     <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>
     <!-- Vite utilisera ce point d'entrée pour compiler le projet -->
     <script type="module" src="/index.tsx"></script>
 </body>
