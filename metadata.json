@@ -1,0 +1,12 @@
+{
+  "name": "ULTRASFOOT",
+  "description": "Synchronisation de masse pour supporters. 70k utilisateurs, mode hors-ligne, vibrations haptiques et flashs synchronisés.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "permissions": [
+    "notifications",
+    "vibrate"
+  ]
+}
