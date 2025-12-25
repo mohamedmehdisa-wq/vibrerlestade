@@ -1,4 +1,5 @@
-import { Team, Match, Competition } from './types';
+
+import { Team, Match } from './types';
 
 export const CAF_COLORS = {
   maroon: '#7B161D',
@@ -8,6 +9,11 @@ export const CAF_COLORS = {
   softGray: '#F8F9FA',
   darkText: '#2D2D2D'
 };
+
+export const APP_MODULES = [
+  { id: 'pulse', name: 'PULSE', desc: 'Cœur de Synchro' },
+  { id: 'offline', name: 'OFFLINE', desc: 'Mode Saturation' }
+];
 
 export const TEAMS: Team[] = [
   { id: 'morocco', competitionId: 'can2025', name: 'Maroc', flag: '🇲🇦', group: 'A', motto: 'Dima Maghrib!', primaryColor: '#C1272D', secondaryColor: '#006233', anthem: "Hymne Chérifien", anthemLyrics: ["Manbita al-ahrar"], songs: [{ id: 'ma_sir', title: 'Sir! Sir! Sir!', lyrics: ['SIR!', 'SIR!', 'SIR!'], bpm: 124 }] },
@@ -19,6 +25,30 @@ export const TEAMS: Team[] = [
 ];
 
 export const MATCHES: Match[] = [
-  { id: 'can_1', competitionId: 'can2025', homeTeamId: 'morocco', awayTeamId: 'egypt', date: '21 Déc', timestamp: 1734739200000, fullDate: '21 Décembre 2025', time: '20:00', status: 'UPCOMING', stadium: 'Stade Moulay Abdallah', group: 'Groupe A' },
-  { id: 'can_2', competitionId: 'can2025', homeTeamId: 'senegal', awayTeamId: 'nigeria', date: '22 Déc', timestamp: 1734825600000, fullDate: '22 Décembre 2025', time: '17:00', status: 'UPCOMING', stadium: 'Stade de Tanger', group: 'Groupe L' }
+  { 
+    id: 'can_1', 
+    competitionId: 'can2025', 
+    homeTeamId: 'morocco', 
+    awayTeamId: 'egypt', 
+    date: '21 Déc', 
+    timestamp: 1734739200000, 
+    fullDate: '21 Décembre 2025', 
+    time: '20:00', 
+    status: 'UPCOMING', 
+    stadium: 'Stade Moulay Abdallah', 
+    group: 'Groupe A' 
+  },
+  { 
+    id: 'can_2', 
+    competitionId: 'can2025', 
+    homeTeamId: 'senegal', 
+    awayTeamId: 'nigeria', 
+    date: '22 Déc', 
+    timestamp: 1734825600000, 
+    fullDate: '22 Décembre 2025', 
+    time: '17:00', 
+    status: 'UPCOMING', 
+    stadium: 'Stade de Tanger', 
+    group: 'Groupe L' 
+  }
 ];
