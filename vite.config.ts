@@ -2,13 +2,18 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
+  // Charger les variables d'environnement (locales ou Vercel)
   const env = loadEnv(mode, process.cwd(), '');
-  const apiKey = process.env.API_KEY || env.API_KEY || '';
+  
+  // On récupère la clé API en priorité de process.env (Vercel) puis du fichier .env
+  const apiKey = env.API_KEY || process.env.API_KEY || '';
 
   return {
     plugins: [react()],
     define: {
-      'process.env.API_KEY': JSON.stringify(apiKey)
+      // Cette définition permet d'utiliser process.env.API_KEY directement dans le code React
+      'process.env.API_KEY': JSON.stringify(apiKey),
+      'process.env.NODE_ENV': JSON.stringify(mode),
     },
     build: {
       outDir: 'dist',
@@ -22,6 +27,10 @@ export default defineConfig(({ mode }) => {
           }
         }
       }
+    },
+    server: {
+      port: 3000,
+      host: true
     }
   };
 });
