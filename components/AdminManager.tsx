@@ -1,113 +1,120 @@
 import React, { useState } from 'react';
-import { Team, Match, SyncSignal } from '../types';
-import { GoogleGenAI } from "@google/genai";
+import { Team, Match, SyncSignal, AnimationEvent } from '../types';
 
 interface AdminManagerProps {
   teams: Team[];
   matches: Match[];
-  users: any[];
   onUpdateTeams: (teams: Team[]) => void;
   onUpdateMatches: (matches: Match[]) => void;
 }
 
-const liveChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('stadium_sync') : null;
-
-const AdminManager: React.FC<AdminManagerProps> = ({ teams, matches, onUpdateMatches }) => {
+const AdminManager: React.FC<AdminManagerProps> = ({ teams, matches, onUpdateTeams, onUpdateMatches }) => {
   const [activeTab, setActiveTab] = useState<'sync' | 'teams' | 'matches'>('sync');
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
 
-  const sendSignal = (type: SyncSignal['type'], message: string) => {
+  const liveChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('stadium_sync') : null;
+
+  const sendSignal = (type: SyncSignal['type'], message: string, targetTeamId?: string) => {
     if (!liveChannel) return;
     const signal: SyncSignal = {
       id: `sig_${Date.now()}`,
       timestamp: Date.now(),
       type,
       message,
-      countdown: 3
+      countdown: 3,
+      targetTeamId
     };
     liveChannel.postMessage(signal);
-    console.log(`Signal envoyé: ${message}`);
   };
 
-  const syncWithCAF = async () => {
-    setIsSyncing(true);
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: "Génère des scores réalistes pour les matchs de la CAN 2025. Réponds uniquement par une liste JSON simple des scores.",
-      });
-      console.log("Scores générés:", response.text);
-      alert("Mise à jour des scores effectuée via l'IA !");
-    } catch (e) {
-      console.error("Erreur de synchronisation:", e);
-      alert("Erreur lors de la connexion à l'API de synchronisation.");
-    } finally {
-      setIsSyncing(false);
-    }
+  const updateTeamColor = (id: string, color: string) => {
+    const newTeams = teams.map(t => t.id === id ? { ...t, primaryColor: color } : t);
+    onUpdateTeams(newTeams);
+    localStorage.setItem('vibrer_stade_teams', JSON.stringify(newTeams));
   };
 
   return (
     <div className="min-h-screen text-white p-6 pb-40 animate-fade-in">
-      <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-8">Poste de Capo</h2>
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-3xl font-black italic uppercase tracking-tighter">Capo Command</h2>
+        <div className="px-3 py-1 bg-red-600 rounded-full text-[8px] font-black animate-pulse">ADMIN ACCESS</div>
+      </div>
       
       <div className="flex gap-4 mb-8 overflow-x-auto no-scrollbar">
-        <button 
-          onClick={() => setActiveTab('sync')} 
-          className={`px-6 py-3 rounded-full text-[10px] font-black uppercase transition-all shrink-0 ${activeTab === 'sync' ? 'bg-white text-black' : 'bg-white/5 text-white/40'}`}
-        >
-          Direct
-        </button>
-        <button 
-          onClick={() => setActiveTab('teams')} 
-          className={`px-6 py-3 rounded-full text-[10px] font-black uppercase transition-all shrink-0 ${activeTab === 'teams' ? 'bg-white text-black' : 'bg-white/5 text-white/40'}`}
-        >
-          Nations
-        </button>
-        <button 
-          onClick={() => setActiveTab('matches')} 
-          className={`px-6 py-3 rounded-full text-[10px] font-black uppercase transition-all shrink-0 ${activeTab === 'matches' ? 'bg-white text-black' : 'bg-white/5 text-white/40'}`}
-        >
-          Calendrier
-        </button>
+        {['sync', 'teams', 'matches'].map((tab: any) => (
+          <button 
+            key={tab}
+            onClick={() => setActiveTab(tab)} 
+            className={`px-8 py-4 rounded-full text-[10px] font-black uppercase transition-all shrink-0 ${activeTab === tab ? 'bg-white text-black' : 'bg-white/5 text-white/40'}`}
+          >
+            {tab === 'sync' ? '🕹️ Live Sync' : tab === 'teams' ? '🌍 Nations' : '📅 Calendrier'}
+          </button>
+        ))}
       </div>
 
       {activeTab === 'sync' && (
-        <div className="space-y-6">
-           <div className="grid grid-cols-2 gap-4">
-              <button onClick={() => sendSignal('FLASH', 'STROBOSCOPE')} className="bg-zinc-800 p-8 rounded-[2.5rem] font-black uppercase text-center flex flex-col items-center gap-4 active:scale-95 transition-transform border border-white/5">
-                 <span className="text-4xl">🔦</span>
-                 <span className="text-[10px] tracking-widest">Flash Sync</span>
-              </button>
-              <button onClick={() => sendSignal('SHOUT', 'SIR ! SIR ! SIR !')} className="bg-[#7B161D] text-white p-8 rounded-[2.5rem] font-black uppercase text-center flex flex-col items-center gap-4 active:scale-95 transition-transform">
-                 <span className="text-4xl">🗣️</span>
-                 <span className="text-[10px] tracking-widest">Cri "SIR"</span>
-              </button>
-              <button onClick={() => sendSignal('CLAPPING', 'CLAP VIKING')} className="bg-zinc-800 p-8 rounded-[2.5rem] font-black uppercase text-center flex flex-col items-center gap-4 active:scale-95 transition-transform border border-white/5">
-                 <span className="text-4xl">🙌</span>
-                 <span className="text-[10px] tracking-widest">Clap</span>
-              </button>
-              <button onClick={() => sendSignal('JUMP', 'TOUT LE MONDE SAUTE')} className="bg-zinc-800 p-8 rounded-[2.5rem] font-black uppercase text-center flex flex-col items-center gap-4 active:scale-95 transition-transform border border-white/5">
-                 <span className="text-4xl">👟</span>
-                 <span className="text-[10px] tracking-widest">Jump</span>
-              </button>
+        <div className="space-y-8">
+           <div className="bg-white/5 p-6 rounded-[2.5rem] border border-white/10">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-4 text-center">Contrôle Orchestré</h3>
+              <div className="grid grid-cols-2 gap-4">
+                 <button onClick={() => sendSignal('SHOUT', 'SIR ! SIR ! SIR !', 'morocco')} className="bg-[#7B161D] p-6 rounded-[2rem] font-black text-[10px] uppercase">
+                    SIR MOROCCO
+                 </button>
+                 <button onClick={() => sendSignal('SILENCE', 'SILENCE TOTAL', 'comoros')} className="bg-zinc-800 p-6 rounded-[2rem] font-black text-[10px] uppercase">
+                    SILENCE ADVERSE
+                 </button>
+                 <button onClick={() => sendSignal('ANTHEM', 'LANCER HYMNE', 'morocco')} className="bg-blue-600 p-6 rounded-[2rem] font-black text-[10px] uppercase">
+                    HYMNE ARABE
+                 </button>
+                 <button onClick={() => sendSignal('FLASH', 'ORAGE DE FLASHS')} className="bg-white text-black p-6 rounded-[2rem] font-black text-[10px] uppercase">
+                    TOUT LE STADE
+                 </button>
+              </div>
            </div>
-
-           <button 
-             onClick={syncWithCAF}
-             disabled={isSyncing}
-             className="w-full bg-white text-black p-6 rounded-[2rem] font-black uppercase text-[10px] tracking-widest mt-4 shadow-xl active:scale-95 transition-all"
-           >
-             {isSyncing ? 'Synchronisation en cours...' : '📡 Synchroniser Live Scores'}
-           </button>
         </div>
       )}
 
-      {activeTab !== 'sync' && (
-        <div className="p-12 text-center glass rounded-[3rem] opacity-50">
-           <p className="text-[10px] font-black uppercase tracking-widest leading-loose">
-             La gestion directe des données {activeTab === 'teams' ? 'des nations' : 'du calendrier'} sera activée lors de la phase finale.
-           </p>
+      {activeTab === 'teams' && (
+        <div className="grid gap-4">
+           {teams.map(team => (
+              <div key={team.id} className="bg-zinc-900 p-6 rounded-[2.5rem] flex items-center justify-between border border-white/5">
+                <div className="flex items-center gap-4">
+                  <span className="text-3xl">{team.flag}</span>
+                  <div>
+                    <h4 className="font-black uppercase tracking-tight text-sm">{team.name}</h4>
+                    <span className="text-[8px] font-bold text-white/40">{team.nickname}</span>
+                  </div>
+                </div>
+                <input 
+                  type="color" 
+                  value={team.primaryColor} 
+                  onChange={(e) => updateTeamColor(team.id, e.target.value)}
+                  className="w-10 h-10 rounded-full overflow-hidden border-none bg-transparent cursor-pointer"
+                />
+              </div>
+           ))}
+        </div>
+      )}
+
+      {activeTab === 'matches' && (
+        <div className="space-y-4">
+          {matches.map(match => (
+            <div key={match.id} className="bg-zinc-900 p-6 rounded-[2.5rem] border border-white/5">
+               <div className="flex justify-between items-center mb-4 opacity-40">
+                  <span className="text-[9px] font-black uppercase">{match.fullDate}</span>
+                  <span className="text-[9px] font-black">{match.time}</span>
+               </div>
+               <div className="flex justify-around items-center">
+                  <span className="text-2xl">{teams.find(t => t.id === match.homeTeamId)?.flag}</span>
+                  <div className="flex gap-2">
+                    <input className="w-8 bg-black border border-white/10 text-center font-black rounded" placeholder="0" />
+                    <span className="font-black opacity-20">-</span>
+                    <input className="w-8 bg-black border border-white/10 text-center font-black rounded" placeholder="0" />
+                  </div>
+                  <span className="text-2xl">{teams.find(t => t.id === match.awayTeamId)?.flag}</span>
+               </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
