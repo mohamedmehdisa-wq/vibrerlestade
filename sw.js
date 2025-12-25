@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vibrer-le-stade-v4';
+const CACHE_NAME = 'vibrer-le-stade-v5';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -34,10 +34,7 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((response) => {
+      return cachedResponse || fetch(event.request).then((response) => {
         if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
