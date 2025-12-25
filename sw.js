@@ -1,12 +1,8 @@
-
-const CACHE_NAME = 'vibrer-le-stade-v3';
+const CACHE_NAME = 'vibrer-le-stade-v4';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/index.tsx',
-  '/public/manifest.json',
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Inter:wght@400;700;900&display=swap'
+  '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
