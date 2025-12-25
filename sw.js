@@ -2,7 +2,9 @@ const CACHE_NAME = 'vibrer-le-stade-v5';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
-  '/manifest.json'
+  '/manifest.json',
+  '/index.tsx',
+  '/App.tsx'
 ];
 
 self.addEventListener('install', (event) => {
@@ -34,7 +36,10 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request).then((response) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(event.request).then((response) => {
         if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
