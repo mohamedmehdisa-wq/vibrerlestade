@@ -7,10 +7,10 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
-if ('serviceWorker' in navigator) {
+// Enregistrement du Service Worker pour le mode offline dans le stade
+if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
   window.addEventListener('load', () => {
-    // Le SW sera à la racine après le build
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
       .then(registration => {
         console.log('VibrerStade SW registered');
       })
