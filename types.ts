@@ -8,6 +8,12 @@ export interface Competition {
   icon: string;
 }
 
+export interface User {
+  email: string;
+  joinedAt: number;
+  favoriteTeamId?: string;
+}
+
 export interface Team {
   id: string;
   name: string;
@@ -36,6 +42,7 @@ export interface Match {
   homeScore?: number;
   awayScore?: number;
   date: string;
+  timestamp: number;
   fullDate: string;
   time: string;
   status: 'UPCOMING' | 'LIVE' | 'FINISHED';
@@ -51,7 +58,9 @@ export enum AppSection {
   MATCHES = 'matches',
   ADMIN = 'admin',
   LIVE = 'live',
-  PREP = 'prep'
+  PREP = 'prep',
+  LEGAL = 'legal',
+  CONTACT = 'contact'
 }
 
 export interface SyncSignal {
