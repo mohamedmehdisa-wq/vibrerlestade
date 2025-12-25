@@ -28,8 +28,6 @@
         .stadium-gradient { background: linear-gradient(135deg, #7B161D 0%, #4A0B11 100%); }
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-spin-slow { animation: rotate 12s linear infinite; }
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         
         .glass {
             background: rgba(255, 255, 255, 0.05);
@@ -53,6 +51,7 @@
 </head>
 <body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <!-- Point d'entrée pour Vite -->
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>
