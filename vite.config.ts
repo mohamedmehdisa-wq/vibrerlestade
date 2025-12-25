@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const apiKey = env.API_KEY || process.env.API_KEY || '';
+  const apiKey = env.VITE_API_KEY || env.API_KEY || process.env.API_KEY || '';
 
   return {
     plugins: [react()],
@@ -12,8 +12,14 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
-      emptyOutDir: true,
-      sourcemap: false
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor': ['react', 'react-dom'],
+            'ai': ['@google/genai']
+          }
+        }
+      }
     }
   };
 });
