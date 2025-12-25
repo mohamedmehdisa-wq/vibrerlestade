@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 
 const STORAGE_KEY = 'vibrer_stade_chants_cache';
@@ -10,11 +11,9 @@ export const generateChantLyrics = async (country: string) => {
     return parsedCache[country];
   }
 
-  // Utilisation de la variable définie dans vite.config.ts
-  const apiKey = process.env.API_KEY;
-
-  if (!apiKey || apiKey === '' || apiKey === 'undefined') {
-    console.warn("Vibrer le Stade : API_KEY manquante dans l'environnement.");
+  // The API key must be obtained exclusively from the environment variable process.env.API_KEY.
+  if (!process.env.API_KEY || process.env.API_KEY === '' || process.env.API_KEY === 'undefined') {
+    console.warn("Vibrer le Stade : API_KEY manquante.");
     return parsedCache[country] || [
       "Allez les Lions, rugissez !", 
       "Dima Maghrib, pour l'éternité !", 
@@ -23,7 +22,8 @@ export const generateChantLyrics = async (country: string) => {
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    // Always use const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Génère 3 lignes courtes et percutantes de chant de supporter pour l'équipe du ${country} à la CAN 2025. Style Ultras, maximum d'énergie. Réponds uniquement en JSON.`,
@@ -42,7 +42,8 @@ export const generateChantLyrics = async (country: string) => {
       }
     });
     
-    const textOutput = response.text;
+    // The GenerateContentResponse object features a text property (not a method)
+    const textOutput = response.text?.trim();
     if (!textOutput) throw new Error("Réponse vide");
 
     const data = JSON.parse(textOutput);
