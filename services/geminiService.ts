@@ -10,10 +10,16 @@ export const generateChantLyrics = async (country: string) => {
     return parsedCache[country];
   }
 
+  // process.env.API_KEY est injecté par Vite au moment du build
   const apiKey = process.env.API_KEY;
 
-  if (!apiKey || apiKey === 'undefined') {
-    return parsedCache[country] || ["Allez les Lions!", "Dima Maghrib!", "Tous ensemble pour la victoire!"];
+  if (!apiKey || apiKey === '' || apiKey === 'undefined') {
+    console.warn("API_KEY manquante. Utilisation du mode dégradé.");
+    return parsedCache[country] || [
+      "Allez les Lions!", 
+      "Dima Maghrib!", 
+      "Fierté Africaine!"
+    ];
   }
 
   try {
@@ -36,7 +42,10 @@ export const generateChantLyrics = async (country: string) => {
       }
     });
     
-    const data = JSON.parse(response.text);
+    const textOutput = response.text;
+    if (!textOutput) throw new Error("Réponse vide de l'IA");
+
+    const data = JSON.parse(textOutput);
     const lyrics = data.lyrics || [];
     
     if (lyrics.length > 0) {
