@@ -12,7 +12,7 @@ interface AdminManagerProps {
 
 const liveChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('stadium_sync') : null;
 
-const AdminManager: React.FC<AdminManagerProps> = ({ teams, matches, onUpdateTeams, onUpdateMatches }) => {
+const AdminManager: React.FC<AdminManagerProps> = ({ teams, matches, onUpdateMatches }) => {
   const [activeTab, setActiveTab] = useState<'sync' | 'teams' | 'matches'>('sync');
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -26,7 +26,7 @@ const AdminManager: React.FC<AdminManagerProps> = ({ teams, matches, onUpdateTea
       countdown: 3
     };
     liveChannel.postMessage(signal);
-    alert(`Signal "${message}" envoyé !`);
+    console.log(`Signal envoyé: ${message}`);
   };
 
   const syncWithCAF = async () => {
@@ -35,12 +35,13 @@ const AdminManager: React.FC<AdminManagerProps> = ({ teams, matches, onUpdateTea
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: "Génère des scores fictifs pour les matchs de la CAN 2025. Réponds en JSON strict.",
+        contents: "Génère des scores réalistes pour les matchs de la CAN 2025. Réponds uniquement par une liste JSON simple des scores.",
       });
-      console.log(response.text);
-      alert("Scores mis à jour via IA !");
+      console.log("Scores générés:", response.text);
+      alert("Mise à jour des scores effectuée via l'IA !");
     } catch (e) {
-      alert("Erreur de connexion API.");
+      console.error("Erreur de synchronisation:", e);
+      alert("Erreur lors de la connexion à l'API de synchronisation.");
     } finally {
       setIsSyncing(false);
     }
@@ -51,45 +52,62 @@ const AdminManager: React.FC<AdminManagerProps> = ({ teams, matches, onUpdateTea
       <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-8">Poste de Capo</h2>
       
       <div className="flex gap-4 mb-8 overflow-x-auto no-scrollbar">
-        <button onClick={() => setActiveTab('sync')} className={`px-6 py-3 rounded-full text-[10px] font-black uppercase transition-all shrink-0 ${activeTab === 'sync' ? 'bg-gold text-black' : 'bg-white/5 text-white/40'}`}>Direct</button>
-        <button onClick={() => setActiveTab('teams')} className={`px-6 py-3 rounded-full text-[10px] font-black uppercase transition-all shrink-0 ${activeTab === 'teams' ? 'bg-white text-black' : 'bg-white/5 text-white/40'}`}>Nations</button>
-        <button onClick={() => setActiveTab('matches')} className={`px-6 py-3 rounded-full text-[10px] font-black uppercase transition-all shrink-0 ${activeTab === 'matches' ? 'bg-white text-black' : 'bg-white/5 text-white/40'}`}>Calendrier</button>
+        <button 
+          onClick={() => setActiveTab('sync')} 
+          className={`px-6 py-3 rounded-full text-[10px] font-black uppercase transition-all shrink-0 ${activeTab === 'sync' ? 'bg-white text-black' : 'bg-white/5 text-white/40'}`}
+        >
+          Direct
+        </button>
+        <button 
+          onClick={() => setActiveTab('teams')} 
+          className={`px-6 py-3 rounded-full text-[10px] font-black uppercase transition-all shrink-0 ${activeTab === 'teams' ? 'bg-white text-black' : 'bg-white/5 text-white/40'}`}
+        >
+          Nations
+        </button>
+        <button 
+          onClick={() => setActiveTab('matches')} 
+          className={`px-6 py-3 rounded-full text-[10px] font-black uppercase transition-all shrink-0 ${activeTab === 'matches' ? 'bg-white text-black' : 'bg-white/5 text-white/40'}`}
+        >
+          Calendrier
+        </button>
       </div>
 
       {activeTab === 'sync' && (
         <div className="space-y-6">
            <div className="grid grid-cols-2 gap-4">
-              <button onClick={() => sendSignal('FLASH', 'ÉCLAIRAGE STROBO')} className="bg-white text-black p-8 rounded-[2.5rem] font-black uppercase text-center flex flex-col items-center gap-4 active:scale-95 transition-transform">
+              <button onClick={() => sendSignal('FLASH', 'STROBOSCOPE')} className="bg-zinc-800 p-8 rounded-[2.5rem] font-black uppercase text-center flex flex-col items-center gap-4 active:scale-95 transition-transform border border-white/5">
                  <span className="text-4xl">🔦</span>
                  <span className="text-[10px] tracking-widest">Flash Sync</span>
               </button>
-              <button onClick={() => sendSignal('SHOUT', 'SIR ! SIR ! SIR !')} className="bg-gold text-black p-8 rounded-[2.5rem] font-black uppercase text-center flex flex-col items-center gap-4 active:scale-95 transition-transform">
+              <button onClick={() => sendSignal('SHOUT', 'SIR ! SIR ! SIR !')} className="bg-[#7B161D] text-white p-8 rounded-[2.5rem] font-black uppercase text-center flex flex-col items-center gap-4 active:scale-95 transition-transform">
                  <span className="text-4xl">🗣️</span>
                  <span className="text-[10px] tracking-widest">Cri "SIR"</span>
               </button>
-              <button onClick={() => sendSignal('CLAPPING', 'CLAP CLAP CLAP')} className="bg-zinc-800 p-8 rounded-[2.5rem] font-black uppercase text-center flex flex-col items-center gap-4 border border-white/10 active:scale-95 transition-transform">
+              <button onClick={() => sendSignal('CLAPPING', 'CLAP VIKING')} className="bg-zinc-800 p-8 rounded-[2.5rem] font-black uppercase text-center flex flex-col items-center gap-4 active:scale-95 transition-transform border border-white/5">
                  <span className="text-4xl">🙌</span>
-                 <span className="text-[10px] tracking-widest">Viking Clap</span>
+                 <span className="text-[10px] tracking-widest">Clap</span>
               </button>
-              <button onClick={() => sendSignal('JUMP', 'TOUT LE MONDE SAUTE')} className="bg-zinc-800 p-8 rounded-[2.5rem] font-black uppercase text-center flex flex-col items-center gap-4 border border-white/10 active:scale-95 transition-transform">
+              <button onClick={() => sendSignal('JUMP', 'TOUT LE MONDE SAUTE')} className="bg-zinc-800 p-8 rounded-[2.5rem] font-black uppercase text-center flex flex-col items-center gap-4 active:scale-95 transition-transform border border-white/5">
                  <span className="text-4xl">👟</span>
-                 <span className="text-[10px] tracking-widest">Jump Sync</span>
+                 <span className="text-[10px] tracking-widest">Jump</span>
               </button>
            </div>
 
            <button 
              onClick={syncWithCAF}
              disabled={isSyncing}
-             className="w-full bg-[#7B161D] text-white p-6 rounded-[2rem] font-black uppercase text-[10px] tracking-widest mt-4"
+             className="w-full bg-white text-black p-6 rounded-[2rem] font-black uppercase text-[10px] tracking-widest mt-4 shadow-xl active:scale-95 transition-all"
            >
-             {isSyncing ? 'Synchronisation...' : '📡 Actualiser Live Scores'}
+             {isSyncing ? 'Synchronisation en cours...' : '📡 Synchroniser Live Scores'}
            </button>
         </div>
       )}
 
       {activeTab !== 'sync' && (
-        <div className="p-12 text-center glass rounded-[3rem] opacity-40">
-           <p className="text-[10px] font-black uppercase tracking-widest">Module de gestion des données bientôt disponible.</p>
+        <div className="p-12 text-center glass rounded-[3rem] opacity-50">
+           <p className="text-[10px] font-black uppercase tracking-widest leading-loose">
+             La gestion directe des données {activeTab === 'teams' ? 'des nations' : 'du calendrier'} sera activée lors de la phase finale.
+           </p>
         </div>
       )}
     </div>
