@@ -1,173 +1,191 @@
 
-import React, { useState, useEffect } from 'react';
-import { AppSection, Team, Match, SyncSignal } from './types';
-import { TEAMS, MATCHES, CAF_COLORS } from './constants';
+import React, { useState, useEffect, useMemo } from 'react';
+import { AppSection, Team, Match, SyncSignal, User } from './types';
+import { TEAMS as INITIAL_TEAMS, MATCHES as INITIAL_MATCHES, CAF_COLORS } from './constants';
 import Layout from './components/Layout';
 import LiveConductor from './components/LiveConductor';
 import ProductSpecs from './components/ProductSpecs';
+import AdminManager from './components/AdminManager';
+import InfoPages from './components/InfoPages';
 
 const liveChannel = new BroadcastChannel('stadium_sync');
 
 const App: React.FC = () => {
   const [section, setSection] = useState<AppSection>(AppSection.HOME);
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  
+  const [teams, setTeams] = useState<Team[]>(() => {
+    const saved = localStorage.getItem('vibrer_stade_teams');
+    return saved ? JSON.parse(saved) : INITIAL_TEAMS;
+  });
+  const [matches, setMatches] = useState<Match[]>(() => {
+    const saved = localStorage.getItem('vibrer_stade_matches');
+    return saved ? JSON.parse(saved) : INITIAL_MATCHES;
+  });
+  const [users, setUsers] = useState<User[]>(() => {
+    const saved = localStorage.getItem('vibrer_stade_users');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('vibrer_stade_session');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [loginEmail, setLoginEmail] = useState('');
+  
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(() => {
+    const saved = localStorage.getItem('vibrer_stade_selected_team');
+    return saved ? JSON.parse(saved) : null;
+  });
+
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [currentLiveSignal, setCurrentLiveSignal] = useState<SyncSignal | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [legalType, setLegalType] = useState<'CGV' | 'PRIVACY' | 'CONTACT' | null>(null);
 
   useEffect(() => {
+    localStorage.setItem('vibrer_stade_teams', JSON.stringify(teams));
+    localStorage.setItem('vibrer_stade_matches', JSON.stringify(matches));
+    localStorage.setItem('vibrer_stade_users', JSON.stringify(users));
+  }, [teams, matches, users]);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
     liveChannel.onmessage = (event) => {
       const signal: SyncSignal = event.data;
       setCurrentLiveSignal(signal);
+      
+      if ('vibrate' in navigator) {
+        navigator.vibrate([100, 50, 100]);
+      }
+
       if (section !== AppSection.ADMIN && section !== AppSection.LIVE && selectedTeam) {
         setSection(AppSection.LIVE);
       }
     };
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, [section, selectedTeam]);
 
-  const testVibration = () => {
-    if ('vibrate' in navigator) {
-      navigator.vibrate([300, 100, 100, 100, 100, 100, 300]);
-    } else {
-      alert("Haptique non supporté.");
-    }
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginEmail.includes('@')) return;
+    const newUser: User = { email: loginEmail, joinedAt: Date.now() };
+    setCurrentUser(newUser);
+    setUsers(prev => [...prev.filter(u => u.email !== loginEmail), newUser]);
+    localStorage.setItem('vibrer_stade_session', JSON.stringify(newUser));
+    setSection(AppSection.HOME);
   };
 
   const handleSelectTeam = (team: Team) => {
     setSelectedTeam(team);
+    localStorage.setItem('vibrer_stade_selected_team', JSON.stringify(team));
     setSection(AppSection.HOME);
-    setSelectedMatch(null); 
   };
 
-  const handleMatchClick = (match: Match) => {
-    setSelectedMatch(match);
-  };
-
-  const publishSignal = (type: SyncSignal['type'], message: string, songId?: string) => {
-    const signal: SyncSignal = {
-      id: Math.random().toString(36).substr(2, 9),
-      timestamp: Date.now(),
-      message,
-      type,
-      songId
-    };
-    liveChannel.postMessage(signal);
-    setCurrentLiveSignal(signal);
-  };
-
-  const renderAdminContent = () => {
-    if (!isAdminAuthenticated) {
-      return (
-        <div className="flex flex-col items-center justify-center min-h-[70vh] text-center p-8 animate-fade-in">
-          <div className="w-24 h-24 bg-slate-50 rounded-3xl flex items-center justify-center mb-8 shadow-inner border border-slate-100 text-3xl"> 🏟️ </div>
-          <h2 className="text-3xl font-black uppercase mb-4 italic tracking-tighter" style={{ color: CAF_COLORS.maroon }}>Staff Stadium</h2>
-          <button 
-            onClick={() => setIsAdminAuthenticated(true)} 
-            className="text-white px-12 py-5 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] shadow-2xl pulse-gold" 
-            style={{ backgroundColor: CAF_COLORS.maroon }}
-          >
-            Accéder au Panel Capo
-          </button>
-        </div>
-      );
-    }
-
+  if (!currentUser) {
     return (
-      <div className="animate-fade-in h-full flex flex-col">
-        <div className="flex-1 overflow-y-auto no-scrollbar">
-          <ProductSpecs />
-          <div className="px-6 space-y-6 pb-20">
-            <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest px-2">Console de Direction (PULSE)</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <button onClick={() => publishSignal('FLASH', 'FLASH GÉNÉRAL')} className="bg-gold text-black p-6 rounded-[2.5rem] font-black uppercase text-[10px] italic shadow-xl active:scale-95 transition-transform flex flex-col items-center gap-2">
-                <span className="text-2xl">📸</span> FLASH
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 font-['Outfit'] relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#7B161D]/40 to-black pointer-events-none" />
+        <div className="relative z-10 w-full max-w-sm text-center animate-fade-in">
+           <div className="mb-10 flex justify-center">
+              <div className="w-24 h-24 bg-white/5 rounded-[2.5rem] flex items-center justify-center border border-white/10 shadow-2xl text-5xl">Stadium</div>
+           </div>
+           <h1 className="text-6xl font-black italic text-white uppercase tracking-tighter mb-4 leading-none">VIBRER<br/>LE STADE</h1>
+           <p className="text-gold font-black text-[11px] uppercase tracking-[0.5em] mb-16 opacity-70">CAN 2025 OFFICIAL FAN SYNC</p>
+           
+           <form onSubmit={handleLogin} className="space-y-5">
+              <input 
+                type="email" 
+                required 
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
+                placeholder="VOTRE ADRESSE EMAIL"
+                className="w-full bg-white/5 border border-white/10 rounded-3xl p-6 text-white text-center font-bold placeholder:text-white/20 focus:border-gold outline-none transition-all shadow-inner backdrop-blur-md"
+              />
+              <button 
+                type="submit"
+                className="w-full bg-white text-black p-6 rounded-3xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl hover:bg-gold transition-all transform active:scale-95"
+              >
+                Accéder au stade
               </button>
-              <button onClick={() => publishSignal('SHOUT', 'TOUT LE MONDE CRIE !')} className="bg-red-600 text-white p-6 rounded-[2.5rem] font-black uppercase text-[10px] italic shadow-xl active:scale-95 transition-transform flex flex-col items-center gap-2">
-                <span className="text-2xl">🗣️</span> CRIER
-              </button>
-              <button onClick={() => publishSignal('CLAPPING', 'CLAPPING VIKING')} className="bg-white text-black border-2 border-slate-100 p-6 rounded-[2.5rem] font-black uppercase text-[10px] italic shadow-xl active:scale-95 transition-transform flex flex-col items-center gap-2">
-                <span className="text-2xl">🙌</span> CLAPPING
-              </button>
-              <button onClick={() => publishSignal('JUMP', 'TOUT LE MONDE SAUTE')} className="bg-[#008B51] text-white p-6 rounded-[2.5rem] font-black uppercase text-[10px] italic shadow-xl active:scale-95 transition-transform flex flex-col items-center gap-2">
-                <span className="text-2xl">👟</span> SAUTER
-              </button>
-              <button onClick={() => publishSignal('SONG', 'SIR! SIR! SIR!', 'ma_sir')} className="col-span-2 bg-black text-white p-6 rounded-[2.5rem] font-black uppercase italic shadow-xl active:scale-95 transition-transform">
-                🦁 DÉPLOYER : SIR ! SIR ! SIR !
-              </button>
-            </div>
-            <button onClick={() => setIsAdminAuthenticated(false)} className="w-full py-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Quitter la Direction</button>
-          </div>
+           </form>
         </div>
       </div>
     );
-  };
+  }
 
   return (
     <Layout activeSection={section} onNavigate={setSection}>
+      <div className="fixed top-4 left-4 z-[180] flex items-center gap-2 bg-black/40 backdrop-blur-xl px-4 py-2 rounded-full border border-white/10">
+        <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_10px_green]' : 'bg-red-500 shadow-[0_0_10px_red]'}`}></div>
+        <span className="text-[9px] font-black uppercase tracking-widest text-white/70">{isOnline ? 'Online' : 'Offline Mode'}</span>
+      </div>
+
       {section === AppSection.HOME && (
         <div className="animate-fade-in flex flex-col items-center">
-          <div className="w-full pt-16 pb-28 px-8 text-center rounded-b-[4.5rem] shadow-[0_20px_50px_rgba(123,22,29,0.3)] relative overflow-hidden" 
-               style={{ background: `linear-gradient(135deg, ${CAF_COLORS.maroon} 0%, #4A0B11 100%)` }}>
-            <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-            <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter mb-6">VIBRER LE STADE</h1>
-            <div className="bg-white/10 p-6 rounded-[2.5rem] backdrop-blur-xl flex justify-between items-center border border-white/20 shadow-inner">
+          <div className="w-full pt-20 pb-28 px-8 text-center rounded-b-[5rem] shadow-[0_30px_80px_rgba(0,0,0,0.6)] relative overflow-hidden" 
+               style={{ background: selectedTeam ? `linear-gradient(135deg, ${selectedTeam.primaryColor} 0%, #1a0304 100%)` : `linear-gradient(135deg, ${CAF_COLORS.maroon} 0%, #1a0304 100%)` }}>
+            <h1 className="text-6xl font-black text-white uppercase italic tracking-tighter mb-8 leading-none drop-shadow-2xl">VIBRER<br/>LE STADE</h1>
+            
+            <div className="bg-black/20 p-6 rounded-[3rem] backdrop-blur-3xl flex justify-between items-center border border-white/10 shadow-inner">
               <div className="text-left">
-                <span className="text-[9px] font-black text-white/50 uppercase tracking-[0.3em] block mb-1">Mon Pays</span>
-                <span className="text-white font-black text-xl leading-none">{selectedTeam ? `${selectedTeam.flag} ${selectedTeam.name}` : 'CHOISIR...'}</span>
+                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em] block mb-1">Ma Nation</span>
+                <span className="text-white font-black text-2xl leading-none tracking-tight">{selectedTeam ? `${selectedTeam.flag} ${selectedTeam.name}` : 'SÉLECTIONNER'}</span>
               </div>
-              <button onClick={() => setSection(AppSection.HUB)} className="bg-gold text-black px-6 py-3 rounded-full text-[10px] font-black uppercase shadow-lg hover:scale-105 transition-transform active:scale-95">Changer</button>
+              <button onClick={() => setSection(AppSection.HUB)} className="bg-white text-black px-8 py-3.5 rounded-full text-[10px] font-black uppercase shadow-xl hover:bg-gold transition-colors">Changer</button>
             </div>
           </div>
 
-          <div className="w-full px-8 -mt-12 z-20 space-y-5">
+          <div className="w-full px-8 -mt-16 z-20 space-y-6">
              <button onClick={() => setSection(AppSection.LIVE)} 
-                     className="w-full bg-white border-[6px] border-[#7B161D] p-12 rounded-[4.5rem] shadow-2xl flex flex-col items-center gap-4 transition-all active:scale-95 group relative overflow-hidden">
-                <span className="text-6xl group-hover:scale-110 transition-transform duration-500">🏟️</span>
-                <span className="text-2xl font-black uppercase italic text-[#7B161D] tracking-tighter">Accès Tribune Live</span>
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Connecté au Capo</p>
+                     className="w-full bg-white text-black p-12 rounded-[5rem] shadow-[0_40px_100px_rgba(0,0,0,0.5)] flex flex-col items-center gap-5 transition-all active:scale-95 group border-[12px]"
+                     style={{ borderColor: selectedTeam?.primaryColor || CAF_COLORS.maroon }}>
+                <span className="text-8xl animate-bounce">🏟️</span>
+                <div className="text-center">
+                  <span className="text-4xl font-black uppercase italic tracking-tighter block leading-none">SESSION LIVE</span>
+                  <p className="text-[10px] font-black opacity-40 uppercase tracking-[0.3em] mt-3">Synchronisation Tribune</p>
                 </div>
              </button>
-
-             <button onClick={testVibration} 
-                     className="w-full bg-slate-900 text-white p-6 rounded-[2.5rem] shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all border border-white/5">
-               <span className="text-xl">📳</span>
-               <span className="text-[10px] font-black uppercase tracking-[0.2em]">Tester la synchro tactile</span>
-             </button>
              
-             {selectedTeam && (
-               <button onClick={() => setSection(AppSection.PREP)} 
-                       className="w-full bg-gradient-to-r from-[#008B51] to-[#006233] text-white p-6 rounded-[2.5rem] shadow-xl flex items-center justify-between group active:scale-95 transition-all">
-                 <div className="flex flex-col text-left">
-                   <span className="text-lg font-black uppercase italic leading-none">Chants Ultras</span>
-                   <span className="text-[9px] font-bold opacity-60 uppercase tracking-widest mt-1">Générés par IA VOX</span>
-                 </div>
-                 <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-2xl">🎵</div>
-               </button>
-             )}
-
-             <button onClick={() => setSection(AppSection.ADMIN)} className="w-full py-8 text-[9px] font-black text-slate-300 uppercase tracking-[0.4em] opacity-40 hover:opacity-100 transition-opacity">
-                Console de Direction (Staff)
-             </button>
+             <div className="grid grid-cols-2 gap-4">
+                <button onClick={() => setSection(AppSection.MATCHES)} className="bg-zinc-900/50 backdrop-blur-xl p-8 rounded-[4rem] border border-white/10 flex flex-col items-center gap-3">
+                   <span className="text-4xl">📅</span>
+                   <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Calendrier</span>
+                </button>
+                <button onClick={() => setSection(AppSection.ADMIN)} className="bg-gold p-8 rounded-[4rem] flex flex-col items-center gap-3 text-black font-black">
+                   <span className="text-4xl">👑</span>
+                   <span className="text-[10px] uppercase tracking-widest">Capo Zone</span>
+                </button>
+             </div>
           </div>
         </div>
       )}
 
       {section === AppSection.HUB && (
-        <div className="p-8 animate-fade-in bg-white min-h-screen">
-          <h2 className="text-4xl font-black uppercase italic mb-10 tracking-tighter">Toutes les Nations</h2>
-          <div className="grid grid-cols-1 gap-4 pb-20 overflow-y-auto no-scrollbar max-h-[75vh]">
-            {TEAMS.map(team => (
-              <button key={team.id} onClick={() => handleSelectTeam(team)} className={`p-6 rounded-[2.8rem] border-2 transition-all flex items-center justify-between ${selectedTeam?.id === team.id ? 'border-transparent shadow-2xl text-white bg-[#7B161D]' : 'bg-white border-slate-50 text-slate-800 shadow-sm'}`}>
-                <div className="flex items-center gap-6">
-                   <span className="text-5xl">{team.flag}</span>
+        <div className="p-8 animate-fade-in pb-40">
+          <div className="flex justify-between items-center mb-12">
+            <h2 className="text-5xl font-black uppercase italic tracking-tighter text-white">Nations</h2>
+            <button onClick={() => setSection(AppSection.HOME)} className="bg-white/10 w-12 h-12 rounded-full flex items-center justify-center font-black">X</button>
+          </div>
+          <div className="grid grid-cols-1 gap-4">
+            {teams.map(team => (
+              <button key={team.id} onClick={() => handleSelectTeam(team)} 
+                      className={`p-8 rounded-[3rem] border-2 transition-all flex items-center justify-between ${selectedTeam?.id === team.id ? 'border-gold shadow-2xl stadium-gradient' : 'bg-zinc-900 border-white/5 text-white/70'}`}>
+                <div className="flex items-center gap-8">
+                   <span className="text-6xl drop-shadow-xl">{team.flag}</span>
                    <div className="text-left">
-                      <span className="block font-black text-xl uppercase tracking-tighter leading-none">{team.name}</span>
-                      <span className={`text-[10px] font-black uppercase tracking-widest ${selectedTeam?.id === team.id ? 'text-white/60' : 'text-slate-400'}`}>Groupe {team.group}</span>
+                     <span className="block font-black text-2xl uppercase tracking-tighter leading-none">{team.name}</span>
+                     <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{team.group}</span>
                    </div>
                 </div>
-                {selectedTeam?.id === team.id && <div className="w-3 h-3 bg-white rounded-full shadow-[0_0_10px_white]"></div>}
+                {selectedTeam?.id === team.id && <div className="w-4 h-4 bg-gold rounded-full shadow-[0_0_20px_#FEBE10]"></div>}
               </button>
             ))}
           </div>
@@ -175,27 +193,27 @@ const App: React.FC = () => {
       )}
 
       {section === AppSection.MATCHES && (
-        <div className="p-8 animate-fade-in bg-white min-h-screen">
-          <h2 className="text-4xl font-black uppercase italic mb-10 tracking-tighter">Matchs</h2>
-          <div className="space-y-6 pb-40 overflow-y-auto no-scrollbar max-h-[78vh]">
-            {MATCHES.map((match) => {
-              const homeTeam = TEAMS.find(t => t.id === match.homeTeamId);
-              const awayTeam = TEAMS.find(t => t.id === match.awayTeamId);
+        <div className="p-8 animate-fade-in overflow-y-auto no-scrollbar pb-40">
+          <h2 className="text-5xl font-black uppercase italic mb-12 tracking-tighter text-white">Calendrier</h2>
+          <div className="space-y-6">
+            {matches.map((match) => {
+              const homeTeam = teams.find(t => t.id === match.homeTeamId);
+              const awayTeam = teams.find(t => t.id === match.awayTeamId);
               return (
-                <div key={match.id} onClick={() => handleMatchClick(match)} className="bg-slate-50 p-8 rounded-[3.5rem] border border-slate-100 shadow-sm active:scale-[0.98] transition-all cursor-pointer">
-                  <div className="flex justify-between items-center mb-6">
-                    <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest">{match.date}</span>
-                    <span className="text-[10px] font-black px-4 py-1.5 rounded-full uppercase bg-red-100 text-[#7B161D]">Groupe {match.group}</span>
+                <div key={match.id} className="bg-zinc-900/50 backdrop-blur-xl p-10 rounded-[4rem] border border-white/5">
+                  <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-4">
+                    <span className="text-[10px] font-black uppercase text-white/30 tracking-[0.2em]">{match.date} • {match.stadium}</span>
+                    <span className="text-[10px] font-black text-gold uppercase tracking-widest">{match.time}</span>
                   </div>
-                  <div className="flex justify-between items-center px-2">
-                    <div className="flex flex-col items-center gap-3 w-1/3">
-                      <span className="text-6xl">{homeTeam?.flag}</span>
-                      <span className="text-[11px] font-black uppercase text-center">{homeTeam?.name}</span>
+                  <div className="flex justify-around items-center text-white">
+                    <div className="flex flex-col items-center gap-3">
+                       <span className="text-6xl drop-shadow-2xl">{homeTeam?.flag || '🚩'}</span>
+                       <span className="text-[11px] font-black uppercase tracking-widest">{homeTeam?.name || 'Inconnu'}</span>
                     </div>
-                    <div className="text-2xl font-black italic text-slate-300">VS</div>
-                    <div className="flex flex-col items-center gap-3 w-1/3">
-                      <span className="text-6xl">{awayTeam?.flag}</span>
-                      <span className="text-[11px] font-black uppercase text-center">{awayTeam?.name}</span>
+                    <div className="text-2xl font-black italic text-white/10 px-4">VS</div>
+                    <div className="flex flex-col items-center gap-3">
+                       <span className="text-6xl drop-shadow-2xl">{awayTeam?.flag || '🚩'}</span>
+                       <span className="text-[11px] font-black uppercase tracking-widest">{awayTeam?.name || 'Inconnu'}</span>
                     </div>
                   </div>
                 </div>
@@ -205,31 +223,38 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {section === AppSection.ADMIN && renderAdminContent()}
-      {section === AppSection.LIVE && selectedTeam && <LiveConductor selectedTeam={selectedTeam} externalSignal={currentLiveSignal} />}
-      
-      {section === AppSection.PREP && selectedTeam && (
-        <div className="p-8 animate-fade-in bg-white min-h-screen">
-           <div className="flex justify-between items-center mb-10">
-             <h2 className="text-4xl font-black uppercase italic tracking-tighter">Ultras {selectedTeam.name}</h2>
-             <span className="text-4xl">{selectedTeam.flag}</span>
-           </div>
-           <div className="space-y-8 pb-32">
-              {selectedTeam.songs.map(song => (
-                <div key={song.id} className="bg-slate-50 p-8 rounded-[3.5rem] border border-slate-100 shadow-sm">
-                   <h3 className="font-black uppercase italic text-2xl text-[#2D2D2D] mb-4">{song.title}</h3>
-                   <div className="bg-white p-8 rounded-[2.5rem] mb-4 border border-slate-100 shadow-inner">
-                      {song.lyrics.map((l, i) => <p key={i} className="text-lg font-black text-[#7B161D] uppercase mb-2">"{l}"</p>)}
-                   </div>
-                   <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest text-center">Tempo : {song.bpm} BPM</p>
-                </div>
-              ))}
-              <div className="p-8 bg-blue-50 rounded-[3rem] border border-blue-100 text-center">
-                 <p className="text-xs font-bold text-blue-600 uppercase mb-2 tracking-widest">IA VOX ACTIVE</p>
-                 <p className="text-[10px] text-blue-400">Génération de nouveaux chants locaux en cours...</p>
-              </div>
-           </div>
+      {section === AppSection.ADMIN && (
+        <div className="animate-fade-in h-full flex flex-col bg-black min-h-screen">
+          {!isAdminAuthenticated ? (
+            <div className="flex flex-col items-center justify-center min-h-[75vh] text-center p-12">
+              <div className="w-32 h-32 bg-white/5 rounded-[3rem] flex items-center justify-center mb-10 border border-white/10 text-5xl">👑</div>
+              <h2 className="text-4xl font-black uppercase mb-6 italic tracking-tighter text-white">CAPO ZONE</h2>
+              <p className="text-xs text-white/30 uppercase tracking-[0.3em] mb-12">Accès réservé aux chefs de tribune</p>
+              <button 
+                onClick={() => setIsAdminAuthenticated(true)} 
+                className="w-full bg-white text-black px-12 py-6 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] shadow-2xl active:scale-95 transition-all" 
+              >
+                S'authentifier
+              </button>
+            </div>
+          ) : (
+            <AdminManager 
+              teams={teams} 
+              matches={matches} 
+              users={users}
+              onUpdateTeams={setTeams}
+              onUpdateMatches={setMatches}
+            />
+          )}
         </div>
+      )}
+      
+      {section === AppSection.LIVE && selectedTeam && (
+        <LiveConductor 
+          selectedTeam={selectedTeam} 
+          externalSignal={currentLiveSignal} 
+          onClose={() => setSection(AppSection.HOME)} 
+        />
       )}
     </Layout>
   );
