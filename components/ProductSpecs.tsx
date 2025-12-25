@@ -47,14 +47,12 @@ const ProductSpecs: React.FC = () => {
       <section className="mb-10">
         <h3 className="text-lg font-bold text-blue-600 uppercase mb-4 tracking-widest italic">Solution Technique</h3>
         <div className="space-y-4">
-            <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 shadow-sm">
-                <h4 className="font-black text-[#2D2D2D] text-sm mb-1 uppercase tracking-tight">Cœur de Synchro (CODE: PULSE)</h4>
-                <p className="text-xs text-slate-500">Utilisation du protocole NTP pour aligner les horloges locales. Déclenchement par Websocket binaire (latence &lt; 50ms).</p>
-            </div>
-            <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 shadow-sm">
-                <h4 className="font-black text-[#2D2D2D] text-sm mb-1 uppercase tracking-tight">Mode Saturation (CODE: OFFLINE)</h4>
-                <p className="text-xs text-slate-500">Service Worker agressif. Toutes les paroles et audios sont en cache. Zéro téléchargement requis pendant le match.</p>
-            </div>
+            {APP_MODULES.map(module => (
+              <div key={module.id} className="bg-slate-50 p-5 rounded-3xl border border-slate-100 shadow-sm">
+                  <h4 className="font-black text-[#2D2D2D] text-sm mb-1 uppercase tracking-tight">Cœur de Synchro (CODE: {module.name})</h4>
+                  <p className="text-xs text-slate-500">{module.desc}. Déclenchement par Websocket binaire (latence < 50ms).</p>
+              </div>
+            ))}
         </div>
       </section>
 
