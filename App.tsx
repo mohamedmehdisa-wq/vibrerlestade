@@ -17,21 +17,27 @@ const App: React.FC = () => {
     try {
       const saved = localStorage.getItem('vibrer_stade_teams');
       return saved ? JSON.parse(saved) : INITIAL_TEAMS;
-    } catch { return INITIAL_TEAMS; }
+    } catch (e) { 
+      return INITIAL_TEAMS; 
+    }
   });
 
   const [matches, setMatches] = useState<Match[]>(() => {
     try {
       const saved = localStorage.getItem('vibrer_stade_matches');
       return saved ? JSON.parse(saved) : INITIAL_MATCHES;
-    } catch { return INITIAL_MATCHES; }
+    } catch (e) { 
+      return INITIAL_MATCHES; 
+    }
   });
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
       const saved = localStorage.getItem('vibrer_stade_session');
       return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
+    } catch (e) { 
+      return null; 
+    }
   });
 
   const [loginEmail, setLoginEmail] = useState('');
@@ -40,7 +46,9 @@ const App: React.FC = () => {
     try {
       const saved = localStorage.getItem('vibrer_stade_selected_team');
       return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
+    } catch (e) { 
+      return null; 
+    }
   });
 
   const [currentLiveSignal, setCurrentLiveSignal] = useState<SyncSignal | null>(null);
