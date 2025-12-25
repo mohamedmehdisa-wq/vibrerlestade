@@ -8,31 +8,37 @@ export interface Competition {
   icon: string;
 }
 
-export interface User {
-  email: string;
-  joinedAt: number;
-  favoriteTeamId?: string;
+export interface AnimationEvent {
+  id: string;
+  minute: number;
+  second: number;
+  type: 'SHOUT' | 'SILENCE' | 'ANTHEM' | 'FLASH_WAVE' | 'JUMP';
+  message: string;
+  targetTeamId?: string; // Si vide, pour tout le stade
+  duration?: number; // en secondes
+}
+
+// Added Song interface for SongLibrary component
+export interface Song {
+  id: string;
+  title: string;
+  lyrics: string[];
 }
 
 export interface Team {
   id: string;
   name: string;
+  nickname: string;
   flag: string;
   group?: string;
   competitionId: string;
-  motto: string;
   primaryColor: string;
   secondaryColor: string;
-  anthem: string;
-  anthemLyrics: string[];
+  anthemLanguage: 'AR' | 'FR' | 'EN';
+  anthemName: string;
+  defaultAnimations: AnimationEvent[];
+  // Added songs property for SongLibrary component
   songs: Song[];
-}
-
-export interface Song {
-  id: string;
-  title: string;
-  lyrics: string[];
-  bpm: number;
 }
 
 export interface Match {
@@ -42,13 +48,14 @@ export interface Match {
   homeScore?: number;
   awayScore?: number;
   date: string;
-  timestamp: number;
   fullDate: string;
   time: string;
+  timestamp: number;
   status: 'UPCOMING' | 'LIVE' | 'FINISHED';
   stadium: string;
   group: string;
   competitionId: string;
+  scheduledAnimations: AnimationEvent[];
 }
 
 export enum AppSection {
@@ -59,15 +66,22 @@ export enum AppSection {
   ADMIN = 'admin',
   LIVE = 'live',
   PREP = 'prep',
-  LEGAL = 'legal',
   CONTACT = 'contact'
+}
+
+// Added User interface for App session management
+export interface User {
+  email: string;
+  joinedAt: number;
 }
 
 export interface SyncSignal {
   id: string;
   timestamp: number;
   message: string;
-  type: 'FLASH' | 'VIBRATE' | 'SHOUT' | 'ANTHEM' | 'SONG' | 'CLAPPING' | 'JUMP';
+  type: 'FLASH' | 'VIBRATE' | 'SHOUT' | 'ANTHEM' | 'SONG' | 'CLAPPING' | 'JUMP' | 'SILENCE';
   countdown?: number;
+  targetTeamId?: string;
+  // Added songId for live orchestration
   songId?: string;
 }
