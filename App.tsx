@@ -1,43 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { AppSection, Team, Match, SyncSignal, User } from './types';
-import { TEAMS as INITIAL_TEAMS, MATCHES as INITIAL_MATCHES, CAF_COLORS } from './constants';
+import { TEAMS as INITIAL_TEAMS, MATCHES as INITIAL_MATCHES } from './constants';
 import Layout from './components/Layout';
 import LiveConductor from './components/LiveConductor';
 import SongLibrary from './components/SongLibrary';
 import AdminManager from './components/AdminManager';
 import ProductSpecs from './components/ProductSpecs';
 
-// Vérification de l'existence de BroadcastChannel (fallback pour vieux navigateurs)
+// Le canal de diffusion pour la synchronisation locale entre onglets (si besoin)
 const liveChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('stadium_sync') : null;
 
 const App: React.FC = () => {
   const [section, setSection] = useState<AppSection>(AppSection.HOME);
-  
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  // Équipes et Matchs
   const [teams, setTeams] = useState<Team[]>(() => {
     try {
       const saved = localStorage.getItem('vibrer_stade_teams');
       return saved ? JSON.parse(saved) : INITIAL_TEAMS;
-    } catch (e) { 
-      return INITIAL_TEAMS; 
-    }
+    } catch (e) { return INITIAL_TEAMS; }
   });
 
   const [matches, setMatches] = useState<Match[]>(() => {
     try {
       const saved = localStorage.getItem('vibrer_stade_matches');
       return saved ? JSON.parse(saved) : INITIAL_MATCHES;
-    } catch (e) { 
-      return INITIAL_MATCHES; 
-    }
+    } catch (e) { return INITIAL_MATCHES; }
   });
 
+  // Utilisateur et Sélection
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
       const saved = localStorage.getItem('vibrer_stade_session');
       return saved ? JSON.parse(saved) : null;
-    } catch (e) { 
-      return null; 
-    }
+    } catch (e) { return null; }
   });
 
   const [loginEmail, setLoginEmail] = useState('');
@@ -46,13 +43,10 @@ const App: React.FC = () => {
     try {
       const saved = localStorage.getItem('vibrer_stade_selected_team');
       return saved ? JSON.parse(saved) : null;
-    } catch (e) { 
-      return null; 
-    }
+    } catch (e) { return null; }
   });
 
   const [currentLiveSignal, setCurrentLiveSignal] = useState<SyncSignal | null>(null);
-  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -64,7 +58,8 @@ const App: React.FC = () => {
       liveChannel.onmessage = (event) => {
         const signal: SyncSignal = event.data;
         setCurrentLiveSignal(signal);
-        if (section !== AppSection.ADMIN && section !== AppSection.LIVE && selectedTeam) {
+        // On ne force le mode LIVE que si l'utilisateur n'est pas déjà en train d'administrer
+        if (section !== AppSection.ADMIN && selectedTeam) {
           setSection(AppSection.LIVE);
         }
       };
@@ -90,7 +85,6 @@ const App: React.FC = () => {
     setSection(AppSection.HOME);
   };
 
-  // UI de chargement ou Fallback si currentUser est null
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center p-8 relative overflow-hidden">
@@ -105,9 +99,9 @@ const App: React.FC = () => {
                 value={loginEmail}
                 onChange={e => setLoginEmail(e.target.value)}
                 placeholder="EMAIL DU SUPPORTER"
-                className="w-full bg-white/5 border border-white/10 rounded-3xl p-6 text-white text-center font-bold outline-none focus:border-gold"
+                className="w-full bg-white/5 border border-white/10 rounded-3xl p-6 text-white text-center font-bold outline-none focus:border-gold transition-all"
               />
-              <button type="submit" className="w-full bg-white text-black p-6 rounded-3xl font-black uppercase text-xs tracking-widest shadow-2xl">Rejoindre la tribune</button>
+              <button type="submit" className="w-full bg-white text-black p-6 rounded-3xl font-black uppercase text-xs tracking-widest shadow-2xl active:scale-95 transition-transform">Rejoindre la tribune</button>
            </form>
         </div>
       </div>
@@ -131,7 +125,7 @@ const App: React.FC = () => {
                 <span className="text-[9px] font-black text-white/40 uppercase tracking-widest block mb-1">Tribune active</span>
                 <span className="text-white font-black text-xl tracking-tight">{selectedTeam ? `${selectedTeam.flag} ${selectedTeam.name}` : 'SÉLECTIONNER'}</span>
               </div>
-              <button onClick={() => setSection(AppSection.HUB)} className="bg-white text-black px-6 py-3 rounded-full text-[9px] font-black uppercase">Changer</button>
+              <button onClick={() => setSection(AppSection.HUB)} className="bg-white text-black px-6 py-3 rounded-full text-[9px] font-black uppercase shadow-lg">Changer</button>
             </div>
           </div>
 
@@ -144,17 +138,17 @@ const App: React.FC = () => {
              </button>
              
              <div className="grid grid-cols-2 gap-4">
-                <button onClick={() => setSection(AppSection.PREP)} className="bg-zinc-900/80 backdrop-blur-xl p-8 rounded-[3rem] border border-white/5 flex flex-col items-center gap-3">
+                <button onClick={() => setSection(AppSection.PREP)} className="bg-zinc-900/80 backdrop-blur-xl p-8 rounded-[3rem] border border-white/5 flex flex-col items-center gap-3 active:scale-95 transition-all">
                    <span className="text-3xl">🎵</span>
                    <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Bibliothèque</span>
                 </button>
-                <button onClick={() => setSection(AppSection.MATCHES)} className="bg-zinc-900/80 backdrop-blur-xl p-8 rounded-[3rem] border border-white/5 flex flex-col items-center gap-3">
+                <button onClick={() => setSection(AppSection.MATCHES)} className="bg-zinc-900/80 backdrop-blur-xl p-8 rounded-[3rem] border border-white/5 flex flex-col items-center gap-3 active:scale-95 transition-all">
                    <span className="text-3xl">📅</span>
                    <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Matches</span>
                 </button>
              </div>
 
-             <button onClick={() => setSection(AppSection.CONTACT)} className="w-full p-6 rounded-[2.5rem] bg-gold/10 border border-gold/20 text-gold flex items-center justify-center gap-3">
+             <button onClick={() => setSection(AppSection.CONTACT)} className="w-full p-6 rounded-[2.5rem] bg-gold/10 border border-gold/20 text-gold flex items-center justify-center gap-3 active:scale-95 transition-all">
                 <span className="text-xl">📄</span>
                 <span className="text-[10px] font-black uppercase tracking-[0.2em]">Dossier Stratégique</span>
              </button>
@@ -190,9 +184,9 @@ const App: React.FC = () => {
                   <span>{match.stadium}</span>
                 </div>
                 <div className="flex justify-between items-center px-4">
-                  <span className="text-3xl">{INITIAL_TEAMS.find(t => t.id === match.homeTeamId)?.flag}</span>
+                  <span className="text-3xl">{teams.find(t => t.id === match.homeTeamId)?.flag}</span>
                   <span className="font-black italic opacity-20">VS</span>
-                  <span className="text-3xl">{INITIAL_TEAMS.find(t => t.id === match.awayTeamId)?.flag}</span>
+                  <span className="text-3xl">{teams.find(t => t.id === match.awayTeamId)?.flag}</span>
                 </div>
               </div>
             ))}
@@ -200,10 +194,22 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {section === AppSection.ADMIN && <AdminManager teams={teams} matches={matches} users={[]} onUpdateTeams={setTeams} onUpdateMatches={setMatches} />}
+      {section === AppSection.ADMIN && (
+        <AdminManager 
+          teams={teams} 
+          matches={matches} 
+          users={[]} 
+          onUpdateTeams={setTeams} 
+          onUpdateMatches={setMatches} 
+        />
+      )}
       
       {section === AppSection.LIVE && selectedTeam && (
-        <LiveConductor selectedTeam={selectedTeam} externalSignal={currentLiveSignal} onClose={() => setSection(AppSection.HOME)} />
+        <LiveConductor 
+          selectedTeam={selectedTeam} 
+          externalSignal={currentLiveSignal} 
+          onClose={() => setSection(AppSection.HOME)} 
+        />
       )}
 
       {section === AppSection.CONTACT && <ProductSpecs />}
