@@ -10,15 +10,15 @@ export const generateChantLyrics = async (country: string) => {
     return parsedCache[country];
   }
 
-  // process.env.API_KEY est injecté par Vite au moment du build
+  // Utilisation de la variable définie dans vite.config.ts
   const apiKey = process.env.API_KEY;
 
   if (!apiKey || apiKey === '' || apiKey === 'undefined') {
-    console.warn("API_KEY manquante. Utilisation du mode dégradé.");
+    console.warn("Vibrer le Stade : API_KEY manquante dans l'environnement.");
     return parsedCache[country] || [
-      "Allez les Lions!", 
-      "Dima Maghrib!", 
-      "Fierté Africaine!"
+      "Allez les Lions, rugissez !", 
+      "Dima Maghrib, pour l'éternité !", 
+      "L'Afrique vibre avec vous !"
     ];
   }
 
@@ -43,7 +43,7 @@ export const generateChantLyrics = async (country: string) => {
     });
     
     const textOutput = response.text;
-    if (!textOutput) throw new Error("Réponse vide de l'IA");
+    if (!textOutput) throw new Error("Réponse vide");
 
     const data = JSON.parse(textOutput);
     const lyrics = data.lyrics || [];
@@ -55,7 +55,7 @@ export const generateChantLyrics = async (country: string) => {
     
     return lyrics;
   } catch (error) {
-    console.error("Gemini Error:", error);
-    return parsedCache[country] || ["Vibrez le stade!", "Allez l'Afrique!", "Ensemble!"];
+    console.error("Erreur Gemini Service:", error);
+    return parsedCache[country] || ["Vibrez le stade !", "Ensemble vers la coupe !"];
   }
 };
