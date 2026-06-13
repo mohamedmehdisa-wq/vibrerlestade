@@ -1,0 +1,27 @@
+name: Upload IPA to App Store
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upload:
+    runs-on: macos-latest
+    steps:
+      - name: Récupérer l'IPA depuis la release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download ipa --repo "$GITHUB_REPOSITORY" --pattern "*.ipa"
+          for f in *.ipa; do mv "$f" app.ipa; done
+          ls -la app.ipa
+
+      - name: Préparer la clé API
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s' "${{ secrets.ASC_KEY_P8 }}" > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+
+      - name: Envoyer à App Store Connect
+        run: |
+          xcrun altool --upload-app -f app.ipa -t ios \
+            --apiKey "${{ secrets.ASC_KEY_ID }}" \
+            --apiIssuer "${{ secrets.ASC_ISSUER_ID }}"
