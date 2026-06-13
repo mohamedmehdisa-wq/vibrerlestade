@@ -18,7 +18,8 @@ jobs:
       - name: Préparer la clé API
         run: |
           mkdir -p ~/.appstoreconnect/private_keys
-          printf '%s' "${{ secrets.ASC_KEY_P8 }}" > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+          printf '%s' "${{ secrets.ASC_KEY_P8 }}" | tr -d '\n' | openssl base64 -d -A > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+          wc -c ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
 
       - name: Envoyer à App Store Connect
         run: |
